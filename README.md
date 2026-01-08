@@ -72,6 +72,42 @@ ETL (Silver → Gold) <br>
    ↓ <br>
 GOLD (Análises e métricas) <br>
 
+---
+
+## Tecnologias Utilizadas
+
+- **Python**
+  - Pandas
+  - NumPy
+  - Matplotlib
+  - Seaborn
+- **SQL**
+  - PostgreSQL
+- **Jupyter Notebook**
+- **Docker & Docker Compose**
+- **Git & GitHub**
+
+---
+## Análises Realizadas
+
+Ao longo do projeto, são realizadas análises como:
+
+- Distribuição de preços dos imóveis
+- Análise de imóveis por estado e cidade
+- Relação entre preço, área construída e número de quartos
+- Identificação de regiões mais valorizadas
+- Comparações entre tipos de imóveis
+- Análises estatísticas descritivas e exploratórias
+
+---
+
+## Como Executar o Projeto
+
+1. Clone o repositório:
+```bash
+git clone https://github.com/seu-usuario/usa-real-estate-analytics.git
+````
+
 ## Estrutura do Repositório
 
 ```bash
@@ -102,3 +138,4 @@ usa-real-estate-analytics/
 ├── docker-compose.yml
 ├── Dockerfile
 └── README.md
+```
