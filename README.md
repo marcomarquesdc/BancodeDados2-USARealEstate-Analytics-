@@ -1,4 +1,4 @@
-# USA Real Estate Analytics  
+# USA Real Estate Analytics (Grupo 23)
 ### Análise de Dados do Mercado Imobiliário dos Estados Unidos
 
 Este projeto tem como objetivo realizar uma **análise exploratória completa (EDA)** e estruturada do mercado imobiliário dos Estados Unidos, utilizando um dataset público do Kaggle.  
@@ -49,6 +49,14 @@ O projeto utiliza a **Arquitetura Medallion**, dividida em três camadas princip
 - Criação de métricas, KPIs e insights
 
 ---
+## Participantes
+|Nome|Matrícula|User|
+|----|---------|----|
+|Marco Marques|211062197|@marcomarquesdc|
+|Bruno Henrique|222024158||
+|Diassis Bezerra|221007985||
+|André Lopes|211031593||
+|Lívia Rodrigues|180105051||
 
 ## Estrutura do Repositório
 
