@@ -58,6 +58,20 @@ O projeto utiliza a **Arquitetura Medallion**, dividida em três camadas princip
 |André Lopes|211031593||
 |Lívia Rodrigues|180105051||
 
+---
+## Pipeline de dados
+CSV (Kaggle) <br>
+   ↓ <br>
+RAW (Exploração inicial) <br>
+   ↓ <br>
+ETL (Raw → Silver) <br>
+   ↓ <br>
+SILVER (Dados tratados) <br>
+   ↓ <br>
+ETL (Silver → Gold) <br>
+   ↓ <br>
+GOLD (Análises e métricas) <br>
+
 ## Estrutura do Repositório
 
 ```bash
