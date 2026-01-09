@@ -54,7 +54,7 @@ O projeto utiliza a **Arquitetura Medallion**, dividida em três camadas princip
 |----|---------|----|
 |Marco Marques|211062197|@marcomarquesdc|
 |Bruno Henrique|222024158||
-|Diassis Bezerra|221007985||
+|Diassis Bezerra|221007985|@Diaxiz|
 |André Lopes|211031593||
 |Lívia Rodrigues|180105051||
 
