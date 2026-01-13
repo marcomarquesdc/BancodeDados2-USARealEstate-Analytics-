@@ -56,7 +56,7 @@ O projeto utiliza a **Arquitetura Medallion**, dividida em três camadas princip
 |Bruno Henryque|222024158|@Bgrangeiro|
 |Diassis Bezerra|221007985|@Diaxiz|
 |André Lopes|211031593||
-|Lívia Rodrigues|180105051||
+|Lívia Rodrigues|180105051|@Liviarodrigues1|
 
 ---
 ## Pipeline de dados
