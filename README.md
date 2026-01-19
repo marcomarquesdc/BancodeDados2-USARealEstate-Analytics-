@@ -1,4 +1,4 @@
-# USA Real Estate Analytics (Grupo 23)
+# USA Real Estate Analytics (Grupo 22)
 ### Análise de Dados do Mercado Imobiliário dos Estados Unidos
 
 Este projeto tem como objetivo realizar uma **análise exploratória completa (EDA)** e estruturada do mercado imobiliário dos Estados Unidos, utilizando um dataset público do Kaggle.  
