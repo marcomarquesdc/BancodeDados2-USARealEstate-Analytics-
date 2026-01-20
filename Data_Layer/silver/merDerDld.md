@@ -72,7 +72,7 @@ Optou-se por manter a representação lógica reduzida, uma vez que não existem
 
 A representação visual do diagrama será apresentada na seção subsequente, evidenciando apenas a entidade principal e seus atributos.
 
-![der](Data_Layer/silver/assets/merder.png)
+![der](assets/merder.png)
 
 # Diagrama Lógico de Dados (DLD) — Camada Silver
 
