@@ -46,7 +46,7 @@ O modelo é composto por uma tabela fato (`fat_ven`) conectada a três dimensõe
 
 > O diagrama segue o padrão visual do **BR Modelo**, com identificação clara de chaves primárias (PK), chaves estrangeiras (FK) e uso de chaves substitutas (SRK).
 
-![der](Data_Layer/silver/assets/merder_gold.png)
+![der](merder_gold.png)
 
 ---
 
