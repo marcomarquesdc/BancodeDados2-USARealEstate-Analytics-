@@ -1,48 +1,43 @@
 -- =============================================================================
 -- DDL CAMADA GOLD (DATA WAREHOUSE) - IMOBILIÁRIA
--- Modelo: Star Schema (Fato e Dimensões)
--- Padrão: SRK (Surrogate Key) SERIAL para chaves primárias
+-- Schema: "DW" (Maiúsculo)
 -- =============================================================================
 
-CREATE SCHEMA IF NOT EXISTS gold;
+CREATE SCHEMA IF NOT EXISTS "DW";
 
--- Limpeza (Ordem reversa de dependência)
-DROP TABLE IF EXISTS gold.fat_ven;
-DROP TABLE IF EXISTS gold.dim_loc;
-DROP TABLE IF EXISTS gold.dim_imb;
-DROP TABLE IF EXISTS gold.dim_car;
+-- Limpeza
+DROP TABLE IF EXISTS "DW".fat_ven CASCADE;
+DROP TABLE IF EXISTS "DW".dim_loc CASCADE;
+DROP TABLE IF EXISTS "DW".dim_imb CASCADE;
+DROP TABLE IF EXISTS "DW".dim_car CASCADE;
 
 -------------------------------------
 -- 1. DIMENSÕES
 -------------------------------------
 
--- 1.1. Dimensão Localização (DIM_LOC)
--- Granularidade: Combinação única de Endereço
-CREATE TABLE gold.dim_loc (
+-- 1.1. Dimensão Localização
+CREATE TABLE "DW".dim_loc (
     srk_loc     SERIAL PRIMARY KEY,
-    nom_cid     VARCHAR(100) NOT NULL,
-    sgl_est     VARCHAR(50) NOT NULL,
-    nom_rua     VARCHAR(255) NOT NULL,
-    cod_cep     VARCHAR(20) NOT NULL,
-    -- Constraint para evitar duplicidade lógica
+    nom_cid     VARCHAR(100),
+    sgl_est     VARCHAR(50),
+    nom_rua     VARCHAR(255),
+    cod_cep     VARCHAR(20),
     UNIQUE (nom_cid, sgl_est, nom_rua, cod_cep)
 );
 
--- 1.2. Dimensão Imobiliária (DIM_IMB)
--- Granularidade: Corretora
-CREATE TABLE gold.dim_imb (
+-- 1.2. Dimensão Imobiliária
+CREATE TABLE "DW".dim_imb (
     srk_imb     SERIAL PRIMARY KEY,
-    nom_imb     VARCHAR(255) NOT NULL,
+    nom_imb     VARCHAR(255),
     UNIQUE (nom_imb)
 );
 
--- 1.3. Dimensão Característica (DIM_CAR)
--- Granularidade: Perfil do Imóvel (Quartos + Banheiros + Segmento)
-CREATE TABLE gold.dim_car (
+-- 1.3. Dimensão Característica
+CREATE TABLE "DW".dim_car (
     srk_car     SERIAL PRIMARY KEY,
-    num_qrt     INTEGER NOT NULL,
-    num_bnh     INTEGER NOT NULL,
-    des_seg     VARCHAR(50), -- Segmento (ex: 'Compacto', 'Luxo')
+    num_qrt     INTEGER,
+    num_bnh     INTEGER,
+    des_seg     VARCHAR(50), 
     UNIQUE (num_qrt, num_bnh)
 );
 
@@ -51,20 +46,13 @@ CREATE TABLE gold.dim_car (
 -------------------------------------
 
 -- Tabela de Fato: Vendas (FAT_VEN)
-CREATE TABLE gold.fat_ven (
-    -- Chaves Estrangeiras (Surrogate Keys)
-    srk_loc     INTEGER NOT NULL REFERENCES gold.dim_loc(srk_loc),
-    srk_imb     INTEGER NOT NULL REFERENCES gold.dim_imb(srk_imb),
-    srk_car     INTEGER NOT NULL REFERENCES gold.dim_car(srk_car),
+CREATE TABLE "DW".fat_ven (
+    srk_loc     INTEGER REFERENCES "DW".dim_loc(srk_loc),
+    srk_imb     INTEGER REFERENCES "DW".dim_imb(srk_imb),
+    srk_car     INTEGER REFERENCES "DW".dim_car(srk_car),
 
-    -- Métricas
     val_prc         NUMERIC(15, 2),     -- Preço Absoluto
     val_prc_m2      NUMERIC(15, 2),     -- Preço por m² (Calculado)
-    num_are_con     DOUBLE PRECISION,   -- Área Construída
-    num_are_ter     DOUBLE PRECISION    -- Área Terreno
+    num_are_con_m2  DOUBLE PRECISION,   -- Área Construída (m²)
+    num_are_ter_m2  DOUBLE PRECISION    -- Área Terreno (m²)
 );
-
--- Índices para performance
-CREATE INDEX idx_fat_loc ON gold.fat_ven(srk_loc);
-CREATE INDEX idx_fat_imb ON gold.fat_ven(srk_imb);
-CREATE INDEX idx_fat_car ON gold.fat_ven(srk_car);
