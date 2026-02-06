@@ -1,143 +1,133 @@
 -- =============================================================================
--- CONSULTAS DE ANÁLISE (DATA WAREHOUSE - IMOBILIÁRIA)
+-- DASHBOARD ANALÍTICO: ESTRATÉGIA E OPORTUNIDADES 
 -- Schema: "DW"
 -- =============================================================================
 
--- 1. Top 10 Cidades com o Metro Quadrado Mais Caro
--- Objetivo: Identificar as áreas mais valorizadas.
-WITH CityAvg AS (
-    SELECT 
-        l.nom_cid,
-        l.sgl_est,
-        AVG(f.val_prc_m2) as media_m2
-    FROM "DW".fat_ven f
-    JOIN "DW".dim_loc l ON f.srk_loc = l.srk_loc
-    GROUP BY l.nom_cid, l.sgl_est
-)
-SELECT * FROM CityAvg ORDER BY media_m2 DESC LIMIT 10;
-
--- 2. Ranking de Faturamento por Imobiliária
--- Objetivo: Quem são os maiores players do mercado?
-WITH Faturamento AS (
-    SELECT 
-        i.nom_imb,
-        SUM(f.val_prc) as total_vendido,
-        COUNT(*) as qtd_imoveis
-    FROM "DW".fat_ven f
-    JOIN "DW".dim_imb i ON f.srk_imb = i.srk_imb
-    GROUP BY i.nom_imb
-)
-SELECT * FROM Faturamento ORDER BY total_vendido DESC LIMIT 10;
-
--- 3. Comparativo: Alto Padrão vs Padrão Familiar (Segmento)
--- Objetivo: Analisar a diferença de preço médio entre os segmentos.
--- Nota: Usando a coluna nova '_m2'
-SELECT 
-    c.des_seg AS segmento,
-    COUNT(*) AS volume_vendas,
-    ROUND(AVG(f.val_prc), 2) AS preco_medio,
-    ROUND(CAST(AVG(f.num_are_con_m2) AS NUMERIC), 2) AS tamanho_medio_m2
-FROM "DW".fat_ven f
-JOIN "DW".dim_car c ON f.srk_car = c.srk_car
-GROUP BY c.des_seg
-ORDER BY preco_medio DESC;
-
--- 4. Oportunidades: Imóveis abaixo do preço médio da cidade
--- Uso de Window Function na CTE
-WITH MediaCidade AS (
-    SELECT 
-        l.srk_loc, 
-        AVG(f.val_prc) OVER (PARTITION BY l.nom_cid) as media_cidade_ref
-    FROM "DW".fat_ven f
-    JOIN "DW".dim_loc l ON f.srk_loc = l.srk_loc
-),
-Oportunidades AS (
-    SELECT 
-        l.nom_cid,
-        f.val_prc,
-        mc.media_cidade_ref,
-        (mc.media_cidade_ref - f.val_prc) as desconto_relativo
-    FROM "DW".fat_ven f
-    JOIN "DW".dim_loc l ON f.srk_loc = l.srk_loc
-    JOIN MediaCidade mc ON f.srk_loc = mc.srk_loc
-    WHERE f.val_prc < (mc.media_cidade_ref * 0.7) -- 30% abaixo da média
-)
-SELECT DISTINCT * FROM Oportunidades LIMIT 20;
-
--- 5. Cidades com maior oferta de Mansões (> 5 quartos)
-WITH Mansoes AS (
-    SELECT f.srk_loc
-    FROM "DW".fat_ven f
-    JOIN "DW".dim_car c ON f.srk_car = c.srk_car
-    WHERE c.num_qrt >= 5
-)
-SELECT 
-    l.nom_cid,
-    l.sgl_est,
-    COUNT(*) as qtd_mansoes
-FROM Mansoes m
-JOIN "DW".dim_loc l ON m.srk_loc = l.srk_loc
-GROUP BY l.nom_cid, l.sgl_est
-ORDER BY qtd_mansoes DESC LIMIT 10;
-
--- 6. Ticket Médio por Estado
+-- 1. Market Share e Faturamento Total por Estado 
+-- Objetivo: Gera a base para gráfico de pizza/treemap. Visão macro de onde vem a receita.
 SELECT 
     l.sgl_est,
-    AVG(f.val_prc) as ticket_medio,
-    SUM(f.val_prc) as volume_total
+    SUM(f.val_prc) AS faturamento_total,
+    COUNT(*) AS qtd_vendas
 FROM "DW".fat_ven f
 JOIN "DW".dim_loc l ON f.srk_loc = l.srk_loc
 GROUP BY l.sgl_est
-ORDER BY ticket_medio DESC;
+ORDER BY faturamento_total DESC;
 
--- 7. Eficiência de Área: Preço vs Tamanho do Terreno
--- Onde o terreno vale mais? (Usando m²)
-WITH TerrenoStats AS (
-    SELECT 
-        l.nom_cid,
-        AVG(f.val_prc / NULLIF(f.num_are_ter_m2, 0)) as preco_por_m2_terreno
-    FROM "DW".fat_ven f
-    JOIN "DW".dim_loc l ON f.srk_loc = l.srk_loc
-    WHERE f.num_are_ter_m2 > 0
-    GROUP BY l.nom_cid
-)
-SELECT * FROM TerrenoStats ORDER BY preco_por_m2_terreno DESC LIMIT 10;
-
--- 8. Tipologia Mais Comum (Moda de Quartos/Banheiros)
+-- 2. Cidades "Locomotivas": Top 1 de cada Estado 
+-- Objetivo: Identificar qual cidade carrega o faturamento do estado nas costas.
 SELECT 
-    c.num_qrt,
-    c.num_bnh,
-    COUNT(*) as frequencia
-FROM "DW".fat_ven f
-JOIN "DW".dim_car c ON f.srk_car = c.srk_car
-GROUP BY c.num_qrt, c.num_bnh
-ORDER BY frequencia DESC LIMIT 5;
-
--- 9. Top 3 Cidades por Estado (Window Function Rank)
-WITH RankingCidade AS (
+    sgl_est, 
+    nom_cid, 
+    total_vendas
+FROM (
     SELECT 
-        l.sgl_est,
-        l.nom_cid,
+        l.sgl_est, 
+        l.nom_cid, 
         SUM(f.val_prc) as total_vendas,
-        RANK() OVER (PARTITION BY l.sgl_est ORDER BY SUM(f.val_prc) DESC) as rank_est
+        RANK() OVER (PARTITION BY l.sgl_est ORDER BY SUM(f.val_prc) DESC) as rnk
     FROM "DW".fat_ven f
     JOIN "DW".dim_loc l ON f.srk_loc = l.srk_loc
     GROUP BY l.sgl_est, l.nom_cid
-)
-SELECT * FROM RankingCidade WHERE rank_est <= 3;
+) t WHERE rnk = 1;
 
--- 10. Relatório Executivo Completo (Denormalizado)
+-- 3. Ranking de Preço Médio m² por Cidade 
+-- Objetivo: Comparativo de valorização para identificar áreas nobres.
 SELECT 
-    l.sgl_est AS Estado,
-    l.nom_cid AS Cidade,
-    i.nom_imb AS Corretora,
-    c.des_seg AS Segmento,
-    SUM(f.val_prc) AS Total_Vendido,
-    AVG(f.val_prc_m2) AS Preco_M2_Medio
+    l.nom_cid, 
+    l.sgl_est,
+    AVG(f.val_prc_m2) AS media_m2_cidade
 FROM "DW".fat_ven f
 JOIN "DW".dim_loc l ON f.srk_loc = l.srk_loc
-JOIN "DW".dim_imb i ON f.srk_imb = i.srk_imb
+GROUP BY l.nom_cid, l.sgl_est
+ORDER BY media_m2_cidade DESC 
+LIMIT 20;
+
+-- 4. Índice de Adensamento: Construção vs Terreno 
+-- Objetivo: Entender se o valor vem da construção ou da terra (localização).
+SELECT 
+    l.nom_cid,
+    AVG(f.val_prc_m2) AS preco_m2_construido,
+    AVG(f.val_prc / NULLIF(f.num_are_ter_m2, 0)) AS preco_m2_terreno
+FROM "DW".fat_ven f
+JOIN "DW".dim_loc l ON f.srk_loc = l.srk_loc
+GROUP BY l.nom_cid
+ORDER BY preco_m2_construido DESC;
+
+-- 5. Mix de Segmentos por Estado 
+-- Objetivo: Entender o perfil de produto (Ex: SP tem mais Alto Padrão ou Econômico?).
+SELECT 
+    l.sgl_est,
+    c.des_seg,
+    COUNT(*) AS total_vendas
+FROM "DW".fat_ven f
+JOIN "DW".dim_loc l ON f.srk_loc = l.srk_loc
 JOIN "DW".dim_car c ON f.srk_car = c.srk_car
-GROUP BY l.sgl_est, l.nom_cid, i.nom_imb, c.des_seg
-ORDER BY Total_Vendido DESC
-LIMIT 50;
+GROUP BY l.sgl_est, c.des_seg;
+
+-- 6. Perfil Típico: Tamanho e Quartos por Cidade 
+-- Objetivo: Definir a "cara" do imóvel médio naquela região.
+SELECT 
+    l.nom_cid,
+    AVG(c.num_qrt) AS media_quartos,
+    AVG(f.num_are_con_m2) AS area_media_m2
+FROM "DW".fat_ven f
+JOIN "DW".dim_loc l ON f.srk_loc = l.srk_loc
+JOIN "DW".dim_car c ON f.srk_car = c.srk_car
+GROUP BY l.nom_cid;
+
+-- 7. Desvio de Preço: Cidade vs. Média Estadual 
+-- Objetivo: Encontrar outliers (quem está barato ou caro em relação ao estado).
+WITH MediaEst AS (
+    SELECT 
+        l.sgl_est, 
+        AVG(f.val_prc) as avg_est
+    FROM "DW".fat_ven f 
+    JOIN "DW".dim_loc l ON f.srk_loc = l.srk_loc 
+    GROUP BY l.sgl_est
+)
+SELECT 
+    l.nom_cid, 
+    l.sgl_est, 
+    AVG(f.val_prc) as media_cid, 
+    m.avg_est,
+    (AVG(f.val_prc) / m.avg_est) - 1 as percentual_desvio
+FROM "DW".fat_ven f
+JOIN "DW".dim_loc l ON f.srk_loc = l.srk_loc
+JOIN MediaEst m ON l.sgl_est = m.sgl_est
+GROUP BY l.nom_cid, l.sgl_est, m.avg_est;
+
+-- 8. Volume de Oportunidades: Imóveis Descontados 
+-- Objetivo: Cidades com maior estoque de imóveis 30% abaixo da média global.
+SELECT 
+    l.nom_cid,
+    COUNT(*) AS qtd_imoveis_abaixo_media
+FROM "DW".fat_ven f
+JOIN "DW".dim_loc l ON f.srk_loc = l.srk_loc
+WHERE f.val_prc < (SELECT AVG(val_prc) * 0.7 FROM "DW".fat_ven)
+GROUP BY l.nom_cid
+ORDER BY qtd_imoveis_abaixo_media DESC;
+
+-- 9. Predominância de Dormitórios por Cidade 
+-- Objetivo: Entender a saturação de tipologias (Solteiros vs Famílias).
+SELECT 
+    l.nom_cid,
+    l.sgl_est,
+    c.num_qrt,
+    COUNT(*) AS total_imoveis
+FROM "DW".fat_ven f
+JOIN "DW".dim_loc l ON f.srk_loc = l.srk_loc
+JOIN "DW".dim_car c ON f.srk_car = c.srk_car
+GROUP BY l.nom_cid, l.sgl_est, c.num_qrt;
+
+-- 10. Ticket Médio por Quantidade de Quartos e Estado 
+-- Objetivo: Analisar o custo de "adicionar um quarto" em cada estado.
+SELECT 
+    l.sgl_est,
+    c.num_qrt,
+    ROUND(AVG(f.val_prc), 2) AS preco_medio
+FROM "DW".fat_ven f
+JOIN "DW".dim_loc l ON f.srk_loc = l.srk_loc
+JOIN "DW".dim_car c ON f.srk_car = c.srk_car
+GROUP BY l.sgl_est, c.num_qrt
+ORDER BY l.sgl_est, c.num_qrt;
